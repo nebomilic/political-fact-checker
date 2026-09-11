@@ -24,7 +24,7 @@ AI fact-checker for German political conversations — extracts factual claims f
 - Combined lint + format check: `npm run check` (Biome — this is not a type check)
 - Regenerate route tree manually: `npm run generate-routes` (normally automatic during dev/build)
 - Type check: none yet — no `tsc --noEmit` script exists. Worth adding (`"typecheck": "tsc --noEmit"`) given how much this stack leans on TypeScript inference
-- Test: none yet — no test runner installed
+- Test: none yet — adopting Vitest. Extraction/verdict evals will run as their own command (e.g. `npm run eval:extraction`), separate from any fast unit tests added later (see Conventions)
 
 ## Conventions
 
@@ -32,6 +32,7 @@ AI fact-checker for German political conversations — extracts factual claims f
 - LLM calls must ground verdicts in retrieved evidence — never answer a verification question from the model's own memory/training data
 - Keep the truth verdict (True / False / Partly true / Unverifiable / Disputed) and the framing flag (No issue / Missing context / Misleading framing) as separate fields, always — never merge them into a single score or badge
 - No auth/session/account code in v0 (see `SCOPE.md`)
+- Extraction/verdict tests are evals, not unit tests — they call the real LLM and are non-deterministic. Assert on claim count and loose topic coverage (substring/keyword match), never exact string equality on generated text. Keep them behind a separate command from any future fast/mocked unit tests, since they cost tokens and shouldn't run on every save
 
 ## Workflow
 

@@ -53,5 +53,5 @@ Implemented in `src/types/fact-check.ts` — that file is the source of truth fo
 
 ## Open questions specific to this PRD
 
-- Exact claim-extraction prompt and how strictly to filter opinion vs. checkable fact
+- Exact claim-extraction prompt and how strictly to filter opinion vs. checkable fact (tracked via eval cases in `src/test/fixtures/claim-extraction-cases.ts`)
 - Whether `confidence` thresholds for surfacing a verdict need tuning per category (e.g. higher bar for `False` than for `Unverifiable`)
