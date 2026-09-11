@@ -1,2 +1,5 @@
+# Without this, Nixpacks misdetects TanStack Start as a static Vite build
+# and serves it via its built-in Caddy static server, ignoring package.json's
+# start script entirely.
 [start]
 cmd = "node .output/server/index.mjs"
