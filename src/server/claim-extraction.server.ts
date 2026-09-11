@@ -1,0 +1,91 @@
+// src/server/claim-extraction.server.ts
+//
+// Server-only claim extraction. Grounded strictly in the pasted transcript —
+// no verification, no evidence retrieval, no outside knowledge. See PRD.md
+// for the extraction step of the user flow and src/types/fact-check.ts for
+// the Claim shape this produces.
+
+import { createOpenAI } from "@ai-sdk/openai";
+import { generateObject } from "ai";
+import { z } from "zod";
+import type { Claim } from "#/types/fact-check";
+
+const extractedClaimSchema = z.object({
+	speaker: z
+		.string()
+		.describe(
+			'Speaker label exactly as it appears before the colon in the transcript, e.g. "Anna Schmidt".',
+		),
+	quote: z
+		.string()
+		.describe(
+			"The exact, verbatim contiguous span of the source transcript containing the claim, extended to full sentence boundaries. Copy this character-for-character from the input — do not paraphrase or correct it.",
+		),
+	extractedClaim: z
+		.string()
+		.describe(
+			"A normalized, self-contained, checkable statement derived from the quote, in German, with pronouns resolved using only information present in the transcript.",
+		),
+});
+
+const extractionResultSchema = z.object({
+	claims: z.array(extractedClaimSchema),
+});
+
+const SYSTEM_PROMPT = `Du extrahierst überprüfbare Sachbehauptungen aus einem deutschsprachigen politischen Transkript.
+
+Regeln:
+- Extrahiere ausschließlich konkrete, überprüfbare Sachbehauptungen (Fakten, Statistiken, Ereignisse, Zitate von Zahlen/Daten).
+- Extrahiere KEINE Meinungen, Werturteile, Vorhersagen, rhetorischen Fragen oder reine Absichtserklärungen.
+- "speaker" ist das Sprecher-Label, wie es im Transkript vor dem Doppelpunkt steht (z.B. "[Anna Schmidt]:" -> "Anna Schmidt").
+- "quote" muss ein exaktes, wortwörtliches Zitat aus dem Transkript sein, erweitert auf vollständige Satzgrenzen. Zitate für verschiedene Behauptungen dürfen sich überschneiden, wenn ein Satz mehrere Behauptungen enthält.
+- "extractedClaim" ist eine normalisierte, eigenständig verständliche Aussage, abgeleitet aus dem Zitat, auf Deutsch, mit Pronomen aufgelöst — ausschließlich anhand von Informationen aus dem Transkript selbst.
+- Bewerte NICHT, ob eine Behauptung wahr oder falsch ist. Verwende KEIN Wissen außerhalb des gegebenen Textes.
+- Wenn der Text keine überprüfbaren Behauptungen enthält, gib eine leere Liste zurück.`;
+
+function normalizeWhitespace(text: string): string {
+	return text.replace(/\s+/g, " ").trim();
+}
+
+export interface ExtractClaimsResult {
+	claims: Claim[];
+	droppedCount: number;
+}
+
+export async function extractClaims(
+	transcript: string,
+): Promise<ExtractClaimsResult> {
+	const apiKey = process.env.OPENAI_API_KEY;
+	if (!apiKey) {
+		throw new Error("OPENAI_API_KEY is not set");
+	}
+	const model = process.env.OPENAI_MODEL ?? "gpt-5.4";
+	const openai = createOpenAI({ apiKey });
+
+	const { object } = await generateObject({
+		model: openai(model),
+		schema: extractionResultSchema,
+		system: SYSTEM_PROMPT,
+		prompt: transcript,
+	});
+
+	const normalizedTranscript = normalizeWhitespace(transcript);
+	let droppedCount = 0;
+	const claims: Claim[] = [];
+
+	for (const extracted of object.claims) {
+		const normalizedQuote = normalizeWhitespace(extracted.quote);
+		if (!normalizedQuote || !normalizedTranscript.includes(normalizedQuote)) {
+			droppedCount += 1;
+			continue;
+		}
+		claims.push({
+			id: crypto.randomUUID(),
+			speaker: extracted.speaker,
+			quote: extracted.quote,
+			extractedClaim: extracted.extractedClaim,
+		});
+	}
+
+	return { claims, droppedCount };
+}
