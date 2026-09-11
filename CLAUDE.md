@@ -11,16 +11,20 @@ AI fact-checker for German political conversations — extracts factual claims f
 - Package manager: npm
 - Toolchain: Biome (lint + format, single config, no separate Prettier)
 - LLM provider: TBD (Claude API and/or OpenAI-compatible endpoints — provider abstraction likely via Vercel AI SDK if multi-provider ends up mattering)
-- Database: TBD — self-hosting alongside the app via Coolify becomes a real option if the deploy target below is confirmed; decide together, not independently, since it changes the obvious default
-- Deploy target: leaning Hetzner VPS via Coolify (not finalized) — if confirmed, Nitro's `node-server` preset is the build target, not an edge/serverless one
+- Database: TBD — self-hosting alongside the app via Coolify (same box) is a real, available option now that the deploy target is confirmed; still deciding against a managed alternative
+- Deploy target: Hetzner VPS via Coolify — confirmed. Nitro build target: `node-server` preset (Coolify deploys via Docker)
 
 ## Commands
 
-_Fill in once the boilerplate exists:_
-- Dev server: `TODO`
-- Lint: `TODO`
-- Type check: `TODO`
-- Test: `TODO`
+- Dev server: `npm run dev` (port 3000)
+- Build: `npm run build`
+- Preview production build: `npm run preview`
+- Lint: `npm run lint` (Biome)
+- Format: `npm run format` (Biome)
+- Combined lint + format check: `npm run check` (Biome — this is not a type check)
+- Regenerate route tree manually: `npm run generate-routes` (normally automatic during dev/build)
+- Type check: none yet — no `tsc --noEmit` script exists. Worth adding (`"typecheck": "tsc --noEmit"`) given how much this stack leans on TypeScript inference
+- Test: none yet — no test runner installed
 
 ## Conventions
 
