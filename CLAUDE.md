@@ -7,10 +7,12 @@ AI fact-checker for German political conversations — extracts factual claims f
 ## Stack
 
 - TypeScript throughout
-- TanStack Start (Vite + TanStack Router + Nitro) — full-stack, file-based type-safe routing, no RSC / no `"use client"` patterns
+- TanStack Start (Vite + TanStack Router + Nitro), file-router mode — full-stack, file-based type-safe routing, no RSC / no `"use client"` patterns
+- Package manager: npm
+- Toolchain: Biome (lint + format, single config, no separate Prettier)
 - LLM provider: TBD (Claude API and/or OpenAI-compatible endpoints — provider abstraction likely via Vercel AI SDK if multi-provider ends up mattering)
-- Database: TBD
-- Deploy target: TBD (Nitro supports Vercel/Cloudflare/Node — decide at first deploy)
+- Database: TBD — self-hosting alongside the app via Coolify becomes a real option if the deploy target below is confirmed; decide together, not independently, since it changes the obvious default
+- Deploy target: leaning Hetzner VPS via Coolify (not finalized) — if confirmed, Nitro's `node-server` preset is the build target, not an edge/serverless one
 
 ## Commands
 
