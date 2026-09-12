@@ -64,7 +64,10 @@ export async function verifyClaim(
 	if (!apiKey) {
 		throw new Error("OPENAI_API_KEY is not set");
 	}
-	const model = process.env.OPENAI_MODEL ?? "gpt-5.4";
+	const model =
+		process.env.OPENAI_VERIFICATION_MODEL ??
+		process.env.OPENAI_MODEL ??
+		"gpt-5.4";
 	const openai = createOpenAI({ apiKey });
 
 	const result = await generateText({

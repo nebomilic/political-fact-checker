@@ -12,7 +12,7 @@ Political conversations mix true claims, false claims, and true-but-misleadingly
 2. System extracts discrete, checkable factual claims, each tagged to a speaker and an exact quote from the source text.
 3. Each claim is verified against retrieved evidence (never from model memory) and assigned a categorical verdict with cited sources.
 4. Each claim separately gets a framing assessment — kept structurally distinct from the verdict, never merged into one score.
-5. Output: the original transcript with claims highlighted inline. Clicking/hovering a claim shows its verdict, framing note, and sources.
+5. Output: a list of extracted claim cards shown below the input form. Each card shows the exact quote, a verify action, and the verdict + framing panels once run (kept structurally separate, per the framing rule above).
 
 ## Data model
 

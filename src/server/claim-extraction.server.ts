@@ -61,7 +61,10 @@ export async function extractClaims(
 	if (!apiKey) {
 		throw new Error("OPENAI_API_KEY is not set");
 	}
-	const model = process.env.OPENAI_MODEL ?? "gpt-5.4";
+	const model =
+		process.env.OPENAI_EXTRACTION_MODEL ??
+		process.env.OPENAI_MODEL ??
+		"gpt-5.4";
 	const openai = createOpenAI({ apiKey });
 
 	const { object } = await generateObject({
