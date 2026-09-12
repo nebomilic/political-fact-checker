@@ -13,7 +13,7 @@ Political conversations mix true claims, false claims, and true-but-misleading f
 - **Verification**: each claim gets a categorical verdict — True / False / Partly true / Unverifiable / Disputed — grounded in retrieved evidence (not model memory), with cited sources
 - **Disputed handling**: for contested claims, show which credible sources land on which side, not just a single verdict
 - **Framing flag**: a separate, distinct axis — No issue / Missing context / Misleading framing — with a one-line explanation. Never merged visually with the truth verdict
-- **Output**: annotated transcript — claim highlighted inline, verdict + framing note + sources on click/hover
+- **Output**: a list of extracted claim cards shown below the input form — each card shows the exact quote, a verify action, and the verdict + framing panels once run (kept structurally separate, per the framing-flag rule above). Supersedes the original "annotated transcript with inline highlight + hover" idea, which turned out not to be necessary for v0's actual goal — validating extraction and verification quality
 - **Language/market**: German-language political statements
 - **Users**: single-user, local use — no accounts, no multi-user features
 
