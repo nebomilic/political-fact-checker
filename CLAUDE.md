@@ -10,7 +10,7 @@ AI fact-checker for German political conversations — extracts factual claims f
 - TanStack Start (Vite + TanStack Router + Nitro), file-router mode — full-stack, file-based type-safe routing, no RSC / no `"use client"` patterns
 - Package manager: npm
 - Toolchain: Biome (lint + format, single config, no separate Prettier)
-- LLM provider: TBD (Claude API and/or OpenAI-compatible endpoints — provider abstraction likely via Vercel AI SDK if multi-provider ends up mattering)
+- LLM provider: OpenAI API, via the Responses API (`/v1/responses`) — needed specifically for the built-in `web_search` tool, which Chat Completions doesn't support. Provider abstraction (e.g. Vercel AI SDK) only worth adding if multi-provider actually becomes a real need
 - Database: TBD — self-hosting alongside the app via Coolify (same box) is a real, available option now that the deploy target is confirmed; still deciding against a managed alternative
 - Deploy target: Hetzner VPS via Coolify — confirmed. Nitro build target: `node-server` preset (Coolify deploys via Docker)
 

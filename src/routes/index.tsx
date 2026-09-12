@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { extractClaimsFn } from "#/server/claim-extraction.functions";
-import type { Claim } from "#/types/fact-check";
+import { verifyClaimFn } from "#/server/claim-verification.functions";
+import type { Claim, Framing, Source, Verdict } from "#/types/fact-check";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -12,16 +13,121 @@ type ExtractionState =
 	| { status: "error"; message: string }
 	| { status: "success"; claims: Claim[]; droppedCount: number };
 
+type VerificationState =
+	| { status: "pending" }
+	| { status: "error"; message: string }
+	| { status: "success"; verdict: Verdict; framing: Framing };
+
+function confidenceLabel(confidence: number): "High" | "Medium" | "Low" {
+	if (confidence >= 0.7) return "High";
+	if (confidence >= 0.4) return "Medium";
+	return "Low";
+}
+
+function groupSourcesByStance(sources: Source[]) {
+	return {
+		supports: sources.filter((source) => source.stance === "supports"),
+		contradicts: sources.filter((source) => source.stance === "contradicts"),
+		context: sources.filter((source) => source.stance === "context"),
+	};
+}
+
+function SourceList({ sources }: { sources: Source[] }) {
+	if (sources.length === 0) {
+		return <p className="text-sm text-gray-500">Keine Quellen gefunden.</p>;
+	}
+	return (
+		<ul className="space-y-1">
+			{sources.map((source) => (
+				<li key={source.url} className="text-sm">
+					<a
+						href={source.url}
+						target="_blank"
+						rel="noreferrer"
+						className="text-blue-700 underline"
+					>
+						{source.title}
+					</a>
+				</li>
+			))}
+		</ul>
+	);
+}
+
+function VerdictPanel({ verdict }: { verdict: Verdict }) {
+	const grouped =
+		verdict.category === "Disputed"
+			? groupSourcesByStance(verdict.sources)
+			: null;
+	return (
+		<div className="flex-1 rounded border border-blue-200 bg-blue-50 p-4">
+			<h3 className="text-xs font-semibold uppercase tracking-wide text-blue-900">
+				Verdict
+			</h3>
+			<div className="mt-1 flex items-center gap-2">
+				<span className="rounded bg-blue-900 px-2 py-0.5 text-sm font-semibold text-white">
+					{verdict.category}
+				</span>
+				<span className="text-xs text-blue-800">
+					Confidence: {confidenceLabel(verdict.confidence)}
+				</span>
+			</div>
+			<p className="mt-2 text-sm text-gray-800">{verdict.explanation}</p>
+			<div className="mt-3">
+				{grouped ? (
+					<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+						<div>
+							<h4 className="text-xs font-semibold text-gray-600">Dafür</h4>
+							<SourceList sources={grouped.supports} />
+						</div>
+						<div>
+							<h4 className="text-xs font-semibold text-gray-600">Dagegen</h4>
+							<SourceList sources={grouped.contradicts} />
+						</div>
+						<div>
+							<h4 className="text-xs font-semibold text-gray-600">Kontext</h4>
+							<SourceList sources={grouped.context} />
+						</div>
+					</div>
+				) : (
+					<SourceList sources={verdict.sources} />
+				)}
+			</div>
+		</div>
+	);
+}
+
+function FramingPanel({ framing }: { framing: Framing }) {
+	return (
+		<div className="flex-1 rounded border border-amber-200 bg-amber-50 p-4">
+			<h3 className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+				Framing
+			</h3>
+			<div className="mt-1">
+				<span className="rounded bg-amber-900 px-2 py-0.5 text-sm font-semibold text-white">
+					{framing.flag}
+				</span>
+			</div>
+			<p className="mt-2 text-sm text-gray-800">{framing.explanation}</p>
+		</div>
+	);
+}
+
 function Home() {
 	const [transcript, setTranscript] = useState("");
 	const [state, setState] = useState<ExtractionState>({ status: "idle" });
+	const [verifications, setVerifications] = useState<
+		Record<string, VerificationState>
+	>({});
 	const extractClaims = useServerFn(extractClaimsFn);
+	const verifyClaim = useServerFn(verifyClaimFn);
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (transcript.trim().length === 0) return;
 
 		setState({ status: "pending" });
+		setVerifications({});
 		try {
 			const result = await extractClaims({ data: { transcript } });
 			setState({
@@ -34,6 +140,33 @@ function Home() {
 				status: "error",
 				message: error instanceof Error ? error.message : "Extraction failed",
 			});
+		}
+	}
+
+	async function handleVerify(claim: Claim) {
+		setVerifications((prev) => ({
+			...prev,
+			[claim.id]: { status: "pending" },
+		}));
+		try {
+			const result = await verifyClaim({ data: { claim } });
+			setVerifications((prev) => ({
+				...prev,
+				[claim.id]: {
+					status: "success",
+					verdict: result.verdict,
+					framing: result.framing,
+				},
+			}));
+		} catch (error) {
+			setVerifications((prev) => ({
+				...prev,
+				[claim.id]: {
+					status: "error",
+					message:
+						error instanceof Error ? error.message : "Verification failed",
+				},
+			}));
 		}
 	}
 
@@ -87,17 +220,47 @@ function Home() {
 						</p>
 					)}
 					<ul className="mt-4 space-y-4">
-						{state.claims.map((claim) => (
-							<li key={claim.id} className="rounded border border-gray-200 p-4">
-								<p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-									{claim.speaker}
-								</p>
-								<blockquote className="mt-1 border-l-2 border-gray-300 pl-3 text-sm italic text-gray-700">
-									{claim.quote}
-								</blockquote>
-								<p className="mt-2 text-sm">{claim.extractedClaim}</p>
-							</li>
-						))}
+						{state.claims.map((claim) => {
+							const verification = verifications[claim.id];
+							return (
+								<li
+									key={claim.id}
+									className="rounded border border-gray-200 p-4"
+								>
+									<p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+										{claim.speaker}
+									</p>
+									<blockquote className="mt-1 border-l-2 border-gray-300 pl-3 text-sm italic text-gray-700">
+										{claim.quote}
+									</blockquote>
+									<p className="mt-2 text-sm">{claim.extractedClaim}</p>
+
+									<button
+										type="button"
+										onClick={() => handleVerify(claim)}
+										disabled={verification?.status === "pending"}
+										className="mt-3 rounded border border-gray-900 px-3 py-1 text-xs font-medium disabled:opacity-50"
+									>
+										{verification?.status === "pending"
+											? "Verifying…"
+											: "Verify claim"}
+									</button>
+
+									{verification?.status === "error" && (
+										<p className="mt-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+											{verification.message}
+										</p>
+									)}
+
+									{verification?.status === "success" && (
+										<div className="mt-3 flex flex-col gap-3 sm:flex-row">
+											<VerdictPanel verdict={verification.verdict} />
+											<FramingPanel framing={verification.framing} />
+										</div>
+									)}
+								</li>
+							);
+						})}
 					</ul>
 				</div>
 			)}

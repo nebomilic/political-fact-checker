@@ -15,7 +15,8 @@
     "lint": "biome lint",
     "check": "biome check",
     "start": "node .output/server/index.mjs",
-    "eval:extraction": "vitest run --config vitest.config.ts"
+    "eval:extraction": "vitest run --config vitest.config.ts src/tests/evals/claim-extraction.eval.ts",
+    "eval:verification": "vitest run --config vitest.config.ts src/tests/evals/claim-verification.eval.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.65",
