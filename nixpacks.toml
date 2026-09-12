@@ -1,3 +1,11 @@
+# npm ci fails here: some optional platform-specific dependencies
+# (WASI/native-binding fallbacks) only get resolved on Linux, so a
+# lockfile generated on macOS can never fully represent them. npm
+# install lets the Linux build container resolve these itself rather
+# than requiring byte-perfect lockfile parity.
+[phases.install]
+cmds = ["npm install"]
+
 # Without this, Nixpacks misdetects TanStack Start as a static Vite build
 # and serves it via its built-in Caddy static server, ignoring package.json's
 # start script entirely.
