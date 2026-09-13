@@ -12,7 +12,7 @@ export const extractClaimsFn = createServerFn({ method: "POST" })
 			typeof data.transcript !== "string" ||
 			data.transcript.trim().length === 0
 		) {
-			throw new Error("Transcript must not be empty");
+			throw new Error("Bitte füge zuerst ein Transkript ein.");
 		}
 		return { transcript: data.transcript };
 	})

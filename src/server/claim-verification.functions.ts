@@ -34,14 +34,21 @@ export function findMissingClaimField(value: unknown): string | null {
 	return null;
 }
 
+const FIELD_LABELS: Record<string, string> = {
+	id: "ID",
+	speaker: "Sprecher:in",
+	quote: "Zitat",
+	extractedClaim: "erkannte Behauptung",
+};
+
 export const verifyClaimFn = createServerFn({ method: "POST" })
 	.validator((data: { claim: Claim }) => {
 		const missingField = findMissingClaimField(data.claim);
 		if (missingField) {
 			throw new Error(
 				missingField === "claim"
-					? "Verification request is missing a claim."
-					: `Claim is missing required field "${missingField}" — try re-extracting the claims.`,
+					? "Die Anfrage enthält keine gültige Behauptung."
+					: `Die Behauptung enthält kein gültiges Feld „${FIELD_LABELS[missingField] ?? missingField}“ — versuche, die Behauptungen erneut zu erkennen.`,
 			);
 		}
 		return { claim: data.claim };

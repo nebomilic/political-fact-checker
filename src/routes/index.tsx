@@ -3,7 +3,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { extractClaimsFn } from "#/server/claim-extraction.functions";
 import { verifyClaimFn } from "#/server/claim-verification.functions";
-import type { Claim, Framing, Source, Verdict } from "#/types/fact-check";
+import type {
+	Claim,
+	Framing,
+	FramingFlag,
+	Source,
+	Verdict,
+	VerdictCategory,
+} from "#/types/fact-check";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -18,10 +25,24 @@ type VerificationState =
 	| { status: "error"; message: string }
 	| { status: "success"; verdict: Verdict; framing: Framing };
 
-function confidenceLabel(confidence: number): "High" | "Medium" | "Low" {
-	if (confidence >= 0.7) return "High";
-	if (confidence >= 0.4) return "Medium";
-	return "Low";
+const VERDICT_LABELS: Record<VerdictCategory, string> = {
+	True: "Wahr",
+	False: "Falsch",
+	"Partly true": "Teilweise wahr",
+	Unverifiable: "Nicht überprüfbar",
+	Disputed: "Umstritten",
+};
+
+const FRAMING_LABELS: Record<FramingFlag, string> = {
+	"No issue": "Kein Problem",
+	"Missing context": "Fehlender Kontext",
+	"Misleading framing": "Irreführende Darstellung",
+};
+
+function confidenceLabel(confidence: number): "Hoch" | "Mittel" | "Niedrig" {
+	if (confidence >= 0.7) return "Hoch";
+	if (confidence >= 0.4) return "Mittel";
+	return "Niedrig";
 }
 
 function groupSourcesByStance(sources: Source[]) {
@@ -62,14 +83,14 @@ function VerdictPanel({ verdict }: { verdict: Verdict }) {
 	return (
 		<div className="flex-1 rounded border border-blue-200 bg-blue-50 p-4">
 			<h3 className="text-xs font-semibold uppercase tracking-wide text-blue-900">
-				Verdict
+				Bewertung
 			</h3>
 			<div className="mt-1 flex items-center gap-2">
 				<span className="rounded bg-blue-900 px-2 py-0.5 text-sm font-semibold text-white">
-					{verdict.category}
+					{VERDICT_LABELS[verdict.category]}
 				</span>
 				<span className="text-xs text-blue-800">
-					Confidence: {confidenceLabel(verdict.confidence)}
+					Sicherheit: {confidenceLabel(verdict.confidence)}
 				</span>
 			</div>
 			<p className="mt-2 text-sm text-gray-800">{verdict.explanation}</p>
@@ -101,11 +122,11 @@ function FramingPanel({ framing }: { framing: Framing }) {
 	return (
 		<div className="flex-1 rounded border border-amber-200 bg-amber-50 p-4">
 			<h3 className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-				Framing
+				Darstellung
 			</h3>
 			<div className="mt-1">
 				<span className="rounded bg-amber-900 px-2 py-0.5 text-sm font-semibold text-white">
-					{framing.flag}
+					{FRAMING_LABELS[framing.flag]}
 				</span>
 			</div>
 			<p className="mt-2 text-sm text-gray-800">{framing.explanation}</p>
@@ -138,7 +159,10 @@ function Home() {
 		} catch (error) {
 			setState({
 				status: "error",
-				message: error instanceof Error ? error.message : "Extraction failed",
+				message:
+					error instanceof Error
+						? error.message
+						: "Die Erkennung ist fehlgeschlagen.",
 			});
 		}
 	}
@@ -164,7 +188,9 @@ function Home() {
 				[claim.id]: {
 					status: "error",
 					message:
-						error instanceof Error ? error.message : "Verification failed",
+						error instanceof Error
+							? error.message
+							: "Die Prüfung ist fehlgeschlagen.",
 				},
 			}));
 		}
@@ -172,15 +198,19 @@ function Home() {
 
 	return (
 		<div className="mx-auto max-w-3xl p-8">
-			<h1 className="text-3xl font-bold">Fact Checker 🕵️</h1>
+			<h1 className="text-3xl font-bold">Faktencheck 🕵️</h1>
 			<p className="mt-2 text-sm text-gray-600">
-				Paste a transcript with speakers labeled as <code>[Name]: ...</code>.
-				Claims are extracted from this text only — nothing is verified yet.
+				Füge unten das Transkript einer politischen Rede oder Debatte ein. Das
+				Tool erkennt automatisch überprüfbare Behauptungen im Text. Für jede
+				Behauptung kannst du anschließend eine Prüfung starten und bekommst zwei
+				getrennte Ergebnisse: eine Bewertung des Wahrheitsgehalts (z. B. wahr,
+				falsch, umstritten) und eine Einschätzung, ob die Aussage fair oder
+				irreführend dargestellt wurde.
 			</p>
 
 			<form className="mt-6" onSubmit={handleSubmit}>
 				<label htmlFor="transcript" className="block text-sm font-medium">
-					Transcript
+					Transkript
 				</label>
 				<textarea
 					id="transcript"
@@ -189,6 +219,10 @@ function Home() {
 					onChange={(event) => setTranscript(event.target.value)}
 					placeholder="[Anna Schmidt]: ..."
 				/>
+				<p className="mt-1 text-xs text-gray-500">
+					Tipp: Kennzeichne Sprecher:innen wie im Beispiel (funktioniert aber
+					auch ohne).
+				</p>
 				<button
 					type="submit"
 					disabled={
@@ -196,7 +230,9 @@ function Home() {
 					}
 					className="mt-3 rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
 				>
-					{state.status === "pending" ? "Extracting…" : "Extract claims"}
+					{state.status === "pending"
+						? "Behauptungen werden erkannt…"
+						: "Behauptungen erkennen"}
 				</button>
 			</form>
 
@@ -208,15 +244,29 @@ function Home() {
 
 			{state.status === "success" && (
 				<div className="mt-8">
-					<h2 className="text-lg font-semibold">
-						{state.claims.length} claim{state.claims.length === 1 ? "" : "s"}{" "}
-						extracted
-					</h2>
+					{state.claims.length === 0 ? (
+						<h2 className="text-lg font-semibold">
+							Keine überprüfbaren Behauptungen gefunden.
+						</h2>
+					) : (
+						<>
+							<h2 className="text-lg font-semibold">
+								{state.claims.length} Behauptung
+								{state.claims.length === 1 ? "" : "en"} erkannt
+							</h2>
+							<p className="mt-1 text-sm text-gray-600">
+								Klicke bei einer Behauptung auf „Behauptung prüfen“, um sie zu
+								verifizieren.
+							</p>
+						</>
+					)}
 					{state.droppedCount > 0 && (
 						<p className="mt-1 text-sm text-amber-700">
-							{state.droppedCount} candidate claim
-							{state.droppedCount === 1 ? "" : "s"} were dropped because the
-							quote could not be matched verbatim in the transcript.
+							{state.droppedCount} erkannte Behauptung
+							{state.droppedCount === 1 ? "" : "en"}{" "}
+							{state.droppedCount === 1 ? "konnte" : "konnten"} nicht angezeigt
+							werden, da das zugehörige Zitat nicht exakt im Transkript gefunden
+							wurde.
 						</p>
 					)}
 					<ul className="mt-4 space-y-4">
@@ -230,10 +280,16 @@ function Home() {
 									<p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
 										{claim.speaker}
 									</p>
+									<p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+										Zitat
+									</p>
 									<blockquote className="mt-1 border-l-2 border-gray-300 pl-3 text-sm italic text-gray-700">
 										{claim.quote}
 									</blockquote>
-									<p className="mt-2 text-sm">{claim.extractedClaim}</p>
+									<p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+										Erkannte Behauptung
+									</p>
+									<p className="mt-1 text-sm">{claim.extractedClaim}</p>
 
 									<button
 										type="button"
@@ -242,8 +298,8 @@ function Home() {
 										className="mt-3 rounded border border-gray-900 px-3 py-1 text-xs font-medium disabled:opacity-50"
 									>
 										{verification?.status === "pending"
-											? "Verifying…"
-											: "Verify claim"}
+											? "Wird geprüft…"
+											: "Behauptung prüfen"}
 									</button>
 
 									{verification?.status === "error" && (
