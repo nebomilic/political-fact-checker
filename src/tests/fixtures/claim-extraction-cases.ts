@@ -1,4 +1,4 @@
-// src/test/fixtures/claim-extraction-cases.ts
+// src/tests/fixtures/claim-extraction-cases.ts
 //
 // Test cases for the claim-extraction step only — no verification/framing yet.
 // Assert on `expectedClaimCount` and loose topic coverage, not exact string

@@ -1,4 +1,4 @@
-// src/test/fixtures/verification-cases.ts
+// src/tests/fixtures/verification-cases.ts
 //
 // Test cases for the verification step: given a Claim, check the resulting
 // Verdict.category and Framing.flag. Same eval philosophy as
