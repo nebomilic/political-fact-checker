@@ -55,11 +55,21 @@ export interface ExtractClaimsResult {
 	droppedCount: number;
 }
 
+const UNKNOWN_SPEAKER = "Unbekannt";
+
 /**
  * Enforces the grounding contract shared by every provider: a claim's quote
- * must actually appear in the source transcript (whitespace-normalized).
- * Claims that fail this — typically a paraphrase rather than a verbatim
- * span — are dropped rather than surfaced with a fabricated source span.
+ * must actually appear in the source transcript (whitespace-normalized),
+ * and extractedClaim must not be blank. Claims that fail this — typically a
+ * paraphrase rather than a verbatim span, or an empty statement — are
+ * dropped rather than surfaced as a broken claim.
+ *
+ * A missing/blank speaker is handled differently: unlike quote and
+ * extractedClaim, there's a safe fallback (the transcript simply had no
+ * "[Name]:" label for the model to copy), so this fills in a placeholder
+ * rather than dropping the claim — Claim.speaker is required downstream
+ * (see claim-verification.functions.ts's isClaim), so leaving it blank
+ * would silently produce a claim that can never be verified.
  */
 export function buildClaims(
 	rawClaims: ReadonlyArray<ExtractedClaim>,
@@ -71,15 +81,20 @@ export function buildClaims(
 
 	for (const extracted of rawClaims) {
 		const normalizedQuote = normalizeWhitespace(extracted.quote);
-		if (!normalizedQuote || !normalizedTranscript.includes(normalizedQuote)) {
+		const extractedClaim = extracted.extractedClaim.trim();
+		if (
+			!normalizedQuote ||
+			!normalizedTranscript.includes(normalizedQuote) ||
+			!extractedClaim
+		) {
 			droppedCount += 1;
 			continue;
 		}
 		claims.push({
 			id: crypto.randomUUID(),
-			speaker: extracted.speaker,
+			speaker: extracted.speaker.trim() || UNKNOWN_SPEAKER,
 			quote: extracted.quote,
-			extractedClaim: extracted.extractedClaim,
+			extractedClaim,
 		});
 	}
 
