@@ -26,7 +26,8 @@ AI fact-checker for German political conversations — extracts factual claims f
 - Combined lint + format check: `npm run check` (Biome — this is not a type check)
 - Regenerate route tree manually: `npm run generate-routes` (normally automatic during dev/build)
 - Type check: none yet — no `tsc --noEmit` script exists. Worth adding (`"typecheck": "tsc --noEmit"`) given how much this stack leans on TypeScript inference
-- Test: no fast/mocked unit tests yet. Extraction/verdict evals (real LLM calls, non-deterministic — see Conventions): `npm run eval:extraction` and `npm run eval:verification`, both defaulting to OpenAI and both accepting `-- --provider openai|mistral` or `-- --compare` (runs both providers, prints a per-case comparison table, never fails on mismatch — see each script's own eval file for what "compare" reports)
+- Fast unit tests (deterministic, no LLM calls, safe on every save): `npm run test` / `npm run test:watch`. Config: `vitest.unit.config.ts`, specs in `src/tests/unit/**/*.test.ts`. Scope so far: the pure validation/grounding functions in `src/server/extraction/shared.ts` and `src/server/claim-verification.functions.ts`
+- Extraction/verdict evals (real LLM calls, non-deterministic — see Conventions): `npm run eval:extraction` and `npm run eval:verification`, both defaulting to OpenAI and both accepting `-- --provider openai|mistral` or `-- --compare` (runs both providers, prints a per-case comparison table, never fails on mismatch — see each script's own eval file for what "compare" reports). Config: `vitest.config.ts`, specs in `src/tests/evals/**/*.eval.ts`
 
 ## Conventions
 
@@ -34,7 +35,8 @@ AI fact-checker for German political conversations — extracts factual claims f
 - LLM calls must ground verdicts in retrieved evidence — never answer a verification question from the model's own memory/training data
 - Keep the truth verdict (True / False / Partly true / Unverifiable / Disputed) and the framing flag (No issue / Missing context / Misleading framing) as separate fields, always — never merge them into a single score or badge
 - No auth/session/account code in v0 (see `SCOPE.md`)
-- Extraction/verdict tests are evals, not unit tests — they call the real LLM and are non-deterministic. Assert on claim count and loose topic coverage (substring/keyword match), never exact string equality on generated text. Keep them behind a separate command from any future fast/mocked unit tests, since they cost tokens and shouldn't run on every save
+- Extraction/verdict tests are evals, not unit tests — they call the real LLM and are non-deterministic. Assert on claim count and loose topic coverage (substring/keyword match), never exact string equality on generated text. Kept behind a separate command (`npm run eval:*`, `vitest.config.ts`) from fast unit tests (`npm run test`, `vitest.unit.config.ts`), since they cost tokens and shouldn't run on every save
+- Pure, deterministic logic (parsing, validation, grounding filters — no LLM call) gets a fast unit test in `src/tests/unit/`, not an eval fixture, even when the bug that motivated it was first found via extraction/verification. If it doesn't need a model to exercise, it doesn't belong behind `eval:*`
 
 ## Workflow
 

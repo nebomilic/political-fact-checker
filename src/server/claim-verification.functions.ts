@@ -21,8 +21,8 @@ const REQUIRED_CLAIM_FIELDS = [
  * actionable than a generic rejection. Returns null when `value` is a valid
  * Claim.
  */
-function findMissingClaimField(value: unknown): string | null {
-	if (typeof value !== "object" || value === null) {
+export function findMissingClaimField(value: unknown): string | null {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
 		return "claim";
 	}
 	const claim = value as Record<string, unknown>;
