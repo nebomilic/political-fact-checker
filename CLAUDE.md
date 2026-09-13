@@ -10,7 +10,9 @@ AI fact-checker for German political conversations — extracts factual claims f
 - TanStack Start (Vite + TanStack Router + Nitro), file-router mode — full-stack, file-based type-safe routing, no RSC / no `"use client"` patterns
 - Package manager: npm
 - Toolchain: Biome (lint + format, single config, no separate Prettier)
-- LLM provider: OpenAI API, via the Responses API (`/v1/responses`) — needed specifically for the built-in `web_search` tool, which Chat Completions doesn't support. Mistral (Agents API, same web-search-tool requirement) is being evaluated as an alternative via a `--provider`/`--compare` flag on `eval:verification` — this is a dev-time comparison only, not a user-facing option or a production decision yet
+- LLM provider: OpenAI API is the production default for both pipeline steps. Mistral is being evaluated as an alternative for both, behind a `--provider`/`--compare` flag on `eval:extraction` and `eval:verification` — dev-time comparison only, not a user-facing option or a production decision yet. The two steps use different OpenAI/Mistral APIs because they have different requirements:
+  - Verification must ground every verdict in retrieved evidence (see Conventions), so it needs a built-in web search tool. OpenAI: the Responses API (`/v1/responses`) via `@ai-sdk/openai`'s `openai.tools.webSearch()` — Chat Completions doesn't support it. Mistral: the Agents/Conversations API (`/v1/conversations`) via the raw `@mistralai/mistralai` SDK, since `@ai-sdk/mistral` doesn't cover that API.
+  - Extraction has no retrieval requirement — it's grounded directly in the pasted transcript (quotes are checked against it post-generation, see `src/server/extraction/shared.ts`) — so both providers use plain structured-output chat calls via the `ai` SDK: `@ai-sdk/openai` and `@ai-sdk/mistral`, both through `generateObject`.
 - Database: TBD — self-hosting alongside the app via Coolify (same box) is a real, available option now that the deploy target is confirmed; still deciding against a managed alternative
 - Deploy target: Hetzner VPS via Coolify — confirmed. Nitro build target: `node-server` preset (Coolify deploys via Docker)
 
@@ -24,7 +26,7 @@ AI fact-checker for German political conversations — extracts factual claims f
 - Combined lint + format check: `npm run check` (Biome — this is not a type check)
 - Regenerate route tree manually: `npm run generate-routes` (normally automatic during dev/build)
 - Type check: none yet — no `tsc --noEmit` script exists. Worth adding (`"typecheck": "tsc --noEmit"`) given how much this stack leans on TypeScript inference
-- Test: none yet — adopting Vitest. Extraction/verdict evals will run as their own command (e.g. `npm run eval:extraction`), separate from any fast unit tests added later (see Conventions)
+- Test: no fast/mocked unit tests yet. Extraction/verdict evals (real LLM calls, non-deterministic — see Conventions): `npm run eval:extraction` and `npm run eval:verification`, both defaulting to OpenAI and both accepting `-- --provider openai|mistral` or `-- --compare` (runs both providers, prints a per-case comparison table, never fails on mismatch — see each script's own eval file for what "compare" reports)
 
 ## Conventions
 
