@@ -7,25 +7,42 @@ import { createServerFn } from "@tanstack/react-start";
 import { verifyClaim } from "#/server/claim-verification.server";
 import type { Claim } from "#/types/fact-check";
 
-function isClaim(value: unknown): value is Claim {
-	if (typeof value !== "object" || value === null) return false;
+const REQUIRED_CLAIM_FIELDS = [
+	"id",
+	"speaker",
+	"quote",
+	"extractedClaim",
+] as const;
+
+/**
+ * Names the first required field that's missing or blank, rather than just
+ * pass/fail — the error this feeds into is shown verbatim in the UI (see
+ * routes/index.tsx's handleVerify), so a specific field name is far more
+ * actionable than a generic rejection. Returns null when `value` is a valid
+ * Claim.
+ */
+function findMissingClaimField(value: unknown): string | null {
+	if (typeof value !== "object" || value === null) {
+		return "claim";
+	}
 	const claim = value as Record<string, unknown>;
-	return (
-		typeof claim.id === "string" &&
-		claim.id.length > 0 &&
-		typeof claim.speaker === "string" &&
-		claim.speaker.length > 0 &&
-		typeof claim.quote === "string" &&
-		claim.quote.length > 0 &&
-		typeof claim.extractedClaim === "string" &&
-		claim.extractedClaim.length > 0
-	);
+	for (const field of REQUIRED_CLAIM_FIELDS) {
+		if (typeof claim[field] !== "string" || claim[field].length === 0) {
+			return field;
+		}
+	}
+	return null;
 }
 
 export const verifyClaimFn = createServerFn({ method: "POST" })
 	.validator((data: { claim: Claim }) => {
-		if (!isClaim(data.claim)) {
-			throw new Error("A valid claim is required");
+		const missingField = findMissingClaimField(data.claim);
+		if (missingField) {
+			throw new Error(
+				missingField === "claim"
+					? "Verification request is missing a claim."
+					: `Claim is missing required field "${missingField}" — try re-extracting the claims.`,
+			);
 		}
 		return { claim: data.claim };
 	})
