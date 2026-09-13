@@ -172,7 +172,7 @@ function Home() {
 
 	return (
 		<div className="mx-auto max-w-3xl p-8">
-			<h1 className="text-3xl font-bold">Claim extraction</h1>
+			<h1 className="text-3xl font-bold">Fact Checker 🕵️</h1>
 			<p className="mt-2 text-sm text-gray-600">
 				Paste a transcript with speakers labeled as <code>[Name]: ...</code>.
 				Claims are extracted from this text only — nothing is verified yet.
