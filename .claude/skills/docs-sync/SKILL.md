@@ -1,15 +1,16 @@
 ---
 name: docs-sync
-description: Review recent work and update CLAUDE.md, SCOPE.md, and PRD.md if they've gone stale, and add or update Architecture Decision Records under docs/adrs/ for any genuinely non-obvious decisions made. Invoke deliberately at the end of a task or session — not automatically after every change.
+description: Review recent work and update CLAUDE.md, SCOPE.md, PRD.md, and README.md if they've gone stale, and add or update Architecture Decision Records under docs/adr/ for any genuinely non-obvious decisions made. Invoke deliberately at the end of a task or session — not automatically after every change.
 ---
 
 # docs-sync
 
 Keeps this project's standing documentation (`CLAUDE.md`, `SCOPE.md`,
-`PRD.md`) accurate, and `docs/adrs/` populated with real decision records —
-without letting either rot from neglect or bloat from over-documentation.
-Invoked deliberately by the user, typically at the end of a task or a
-working session. Never run this automatically after a routine change.
+`PRD.md`, `README.md`) accurate, and `docs/adr/` populated with real
+decision records — without letting either rot from neglect or bloat from
+over-documentation. Invoked deliberately by the user, typically at the end
+of a task or a working session. Never run this automatically after a
+routine change.
 
 Ground rule for the whole skill: **only state what's actually true or
 actually discussed.** Every doc update and every ADR must be grounded in
@@ -50,7 +51,7 @@ Re-read `CLAUDE.md` section by section against current repo reality:
 
 Edit directly rather than asking permission first — these are low-risk,
 reversible doc edits — but report exactly what you changed and why in the
-final summary (Step 6).
+final summary (Step 7).
 
 ## Step 3 — SCOPE.md pass
 
@@ -71,12 +72,30 @@ the PRD describes something that changed shape (a field, a step, a UI
 flow), update the description — but PRD.md is product intent, not
 implementation detail; don't turn it into a changelog.
 
-## Step 5 — ADR pass
+## Step 5 — README.md pass
+
+README.md is the front door — a newcomer's or future-you's first few
+minutes, not a restatement of PRD.md's full detail. Check only the parts a
+reader would actually rely on:
+
+- **Getting started**: does the install/setup/run sequence still match
+  `package.json` and `.env.example`? A new required env var or a changed
+  setup step here is a real bug, not a style nit.
+- **Commands**: does it match `CLAUDE.md`'s Commands section and the
+  scripts in `package.json`? Either mirror CLAUDE.md's list or stay
+  deliberately trimmed with a pointer there for the rest — don't let it
+  drift into a third, independent command list.
+- **Feature/flow overview**: if the product now does something README
+  doesn't mention (a new entry point, a changed flow), add a short
+  mention — a sentence or two, not PRD.md's full step-by-step.
+- **Docs map**: any new standing doc worth linking from here?
+
+## Step 6 — ADR pass
 
 Two separate checks:
 
 **(a) Do any existing ADRs need updating?** Read every file in
-`docs/adrs/`. If this session's work changed a fact, decision, or
+`docs/adr/`. If this session's work changed a fact, decision, or
 consequence an existing ADR describes (a new option added to something it
 called "not yet implemented," a prediction it made now has real data
 behind it, an API/approach it named got extended or replaced), update that
@@ -97,7 +116,7 @@ honestly; most changes should *not* get one:
   a code comment have been enough?
 
 If a decision clears that bar, write a new ADR matching the house style
-established in `docs/adrs/`:
+established in `docs/adr/`:
 - Filename: `NNNN-kebab-case-title.md`, next sequential number.
 - Sections: `# ADR NNNN: <title>`, `**Status**`, `## Context`, `##
   Decision`, `## Consequences`.
@@ -111,10 +130,10 @@ If nothing clears the bar, say so explicitly in the summary rather than
 silently skipping it — "considered an ADR for X, didn't add one because Y"
 is useful output, not a non-event.
 
-## Step 6 — Summarize
+## Step 7 — Summarize
 
 Close with a concise, scannable summary: what was updated in each of the
-three standing docs (or "no changes needed" per file, stated plainly), which
+four standing docs (or "no changes needed" per file, stated plainly), which
 ADRs were updated and why, which new ADRs were added, and — explicitly —
 what was considered and deliberately *not* added or changed, with the
 reason. The goal is for the user to be able to skim the summary and catch
