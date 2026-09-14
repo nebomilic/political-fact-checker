@@ -2,7 +2,7 @@
 
 ## Project
 
-AI fact-checker for German political conversations — extracts factual claims from text, verifies them against retrieved evidence, and separately flags misleading framing. See `SCOPE.md` for v0 in/out scope — check it before making structural decisions or when scope is ambiguous.
+AI fact-checker for German political conversations — extracts factual claims from text, verifies them against retrieved evidence, and separately flags misleading framing. See `SCOPE.md` for v0 in/out scope — check it before making structural decisions or when scope is ambiguous. See `METHODOLOGY.md` for how this project's docs and dev workflow fit together (chat vs. Claude Code, testing layers, the ADR practice).
 
 ## Stack
 
