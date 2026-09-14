@@ -227,14 +227,27 @@ function QuickCheck() {
 					Aussage oder Frage
 				</label>
 				<div className="mt-1 flex gap-2">
-					<input
-						id="quick-input"
-						type="text"
-						className="h-11 w-full rounded border border-gray-300 px-3 text-sm"
-						value={input}
-						onChange={(event) => setInput(event.target.value)}
-						placeholder="Deutschland hat die Atomkraft abgeschafft."
-					/>
+					<div className="relative w-full">
+						<input
+							id="quick-input"
+							type="text"
+							className="h-11 w-full rounded border border-gray-300 px-3 pr-9 text-sm"
+							value={input}
+							onChange={(event) => setInput(event.target.value)}
+							placeholder="Deutschland hat die Atomkraft abgeschafft."
+						/>
+						{input.length > 0 && (
+							<button
+								type="button"
+								onClick={() => setInput("")}
+								aria-label="Eingabe löschen"
+								title="Eingabe löschen"
+								className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
+							>
+								✕
+							</button>
+						)}
+					</div>
 					{audio.supported && (
 						<button
 							type="button"
