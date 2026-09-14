@@ -5,11 +5,16 @@
 // see SCOPE.md's Quick Check bullet and PRD.md. Reuses quickCheckFn's
 // classify-and-normalize call (src/server/extraction/shared.ts) instead of
 // the multi-speaker transcript parser, then verifyClaimFn unchanged.
+//
+// Voice input records audio client-side and transcribes it server-side via
+// OpenAI's Whisper API (audio-transcription.functions.ts) — see ADR 0007
+// for why this replaced the browser's Web Speech API.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { FramingPanel, VerdictPanel } from "#/components/fact-check-panels";
+import { transcribeAudioFn } from "#/server/audio-transcription.functions";
 import { quickCheckFn } from "#/server/claim-extraction.functions";
 import { verifyClaimFn } from "#/server/claim-verification.functions";
 import type { Claim, Framing, Verdict } from "#/types/fact-check";
@@ -24,116 +29,146 @@ type QuickCheckState =
 	| { status: "verifying"; claim: Claim }
 	| { status: "verified"; claim: Claim; verdict: Verdict; framing: Framing };
 
-const SPEECH_ERROR_MESSAGES: Partial<Record<string, string>> = {
-	"not-allowed": "Mikrofonzugriff wurde verweigert.",
-	"service-not-allowed": "Mikrofonzugriff wurde verweigert.",
-	"no-speech": "Es wurde keine Sprache erkannt. Versuche es erneut.",
-	"audio-capture": "Kein Mikrofon gefunden.",
-	// Chrome's built-in speech recognition sends audio to Google's servers
-	// using an API key baked into official Google Chrome builds. Other
-	// Chromium-based browsers (Brave, Vivaldi, Arc, Edge, ...) generally
-	// lack that key, so every request fails with this exact error
-	// regardless of actual connectivity — not something fixable here, so
-	// the message names the likely cause instead of implying a real outage.
-	network:
-		"Die Spracherkennung konnte keine Verbindung herstellen. Das passiert oft, wenn kein offizielles Google Chrome verwendet wird (z. B. Brave, Vivaldi, Arc oder Edge) — versuche es in Google Chrome.",
-};
+const PREFERRED_MIME_TYPES = [
+	"audio/webm;codecs=opus",
+	"audio/webm",
+	"audio/mp4",
+	"audio/ogg;codecs=opus",
+];
+
+function pickSupportedMimeType(): string | undefined {
+	return PREFERRED_MIME_TYPES.find((type) =>
+		MediaRecorder.isTypeSupported(type),
+	);
+}
+
+function fileExtensionForMimeType(mimeType: string): string {
+	if (mimeType.includes("mp4")) return "mp4";
+	if (mimeType.includes("ogg")) return "ogg";
+	return "webm";
+}
+
+// A recording is capped at this many seconds and auto-stopped, so a
+// forgotten open mic can't turn into an unbounded upload/Whisper cost.
+const MAX_RECORDING_SECONDS = 60;
 
 /**
- * continuous + interimResults so the browser doesn't auto-stop the session
- * on the first pause in speech — recording only ends when the user clicks
- * the mic button again (recognition.stop()) or a real error occurs. Final
- * segments are accumulated across the session and committed to the input
- * as they land, so by the time recording actually stops the transcript is
- * already there.
+ * Records audio client-side (MediaRecorder) and transcribes it server-side
+ * via transcribeAudioFn (OpenAI Whisper — see ADR 0007). getUserMedia has
+ * the same secure-context requirement the old Web Speech API had, so the
+ * insecureContext check/message carry over unchanged.
  */
-function useSpeechInput(onFinalTranscript: (text: string) => void) {
+function useAudioRecording(onTranscript: (text: string) => void) {
 	const [supported, setSupported] = useState(false);
-	// Mic access (getUserMedia, which SpeechRecognition uses under the hood)
-	// is only granted in a secure context: HTTPS, or the browser-special-cased
-	// "localhost"/"127.0.0.1". Opening the dev server via `--host` and
-	// hitting it from another device (e.g. a phone, over the LAN IP) is
-	// plain HTTP on a non-localhost address, so the browser silently denies
-	// mic access without ever showing a permission prompt — indistinguishable
-	// from a real "not-allowed" error unless we check this ourselves and say
-	// so, instead of implying the user clicked "block".
 	const [insecureContext, setInsecureContext] = useState(false);
-	const [listening, setListening] = useState(false);
+	const [recording, setRecording] = useState(false);
+	const [transcribing, setTranscribing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const recognitionRef = useRef<SpeechRecognition | null>(null);
-	const finalTranscriptRef = useRef("");
-	const onFinalTranscriptRef = useRef(onFinalTranscript);
-	onFinalTranscriptRef.current = onFinalTranscript;
+	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+	const chunksRef = useRef<Blob[]>([]);
+	const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const transcribeAudio = useServerFn(transcribeAudioFn);
+	const onTranscriptRef = useRef(onTranscript);
+	onTranscriptRef.current = onTranscript;
 
 	useEffect(() => {
-		const SpeechRecognitionImpl =
-			window.SpeechRecognition ?? window.webkitSpeechRecognition;
-		if (!SpeechRecognitionImpl) return;
+		const hasRecordingSupport =
+			typeof navigator !== "undefined" &&
+			!!navigator.mediaDevices?.getUserMedia &&
+			typeof MediaRecorder !== "undefined";
+		if (!hasRecordingSupport) return;
 		if (!window.isSecureContext) {
 			setInsecureContext(true);
 			return;
 		}
-
-		const recognition = new SpeechRecognitionImpl();
-		recognition.lang = "de-DE";
-		recognition.continuous = true;
-		recognition.interimResults = true;
-
-		recognition.onstart = () => {
-			setError(null);
-			setListening(true);
-		};
-		recognition.onresult = (event) => {
-			for (let i = event.resultIndex; i < event.results.length; i++) {
-				const result = event.results[i];
-				const transcript = result?.[0]?.transcript;
-				if (result?.isFinal && transcript) {
-					finalTranscriptRef.current =
-						`${finalTranscriptRef.current} ${transcript}`.trim();
-					onFinalTranscriptRef.current(finalTranscriptRef.current);
-				}
-			}
-		};
-		recognition.onerror = (event) => {
-			setListening(false);
-			setError(
-				SPEECH_ERROR_MESSAGES[event.error] ??
-					"Spracheingabe ist fehlgeschlagen.",
-			);
-		};
-		recognition.onend = () => setListening(false);
-
-		recognitionRef.current = recognition;
 		setSupported(true);
-
-		return () => {
-			recognition.onstart = null;
-			recognition.onresult = null;
-			recognition.onerror = null;
-			recognition.onend = null;
-			recognition.abort();
-		};
 	}, []);
 
-	function toggle() {
-		const recognition = recognitionRef.current;
-		if (!recognition) return;
-		if (listening) {
-			recognition.stop();
-			return;
+	function stop() {
+		if (autoStopTimerRef.current) {
+			clearTimeout(autoStopTimerRef.current);
+			autoStopTimerRef.current = null;
 		}
-		finalTranscriptRef.current = "";
+		mediaRecorderRef.current?.stop();
+	}
+
+	async function start() {
 		setError(null);
 		try {
-			recognition.start();
-		} catch {
-			// Already starting/started (browser-dependent InvalidStateError on a
-			// rapid double click) — the in-flight session's onstart/onend will
-			// resolve the listening state, nothing to do here.
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: true,
+			});
+			const mimeType = pickSupportedMimeType();
+			const recorder = new MediaRecorder(
+				stream,
+				mimeType ? { mimeType } : undefined,
+			);
+			chunksRef.current = [];
+
+			recorder.ondataavailable = (event) => {
+				if (event.data.size > 0) chunksRef.current.push(event.data);
+			};
+			recorder.onstop = async () => {
+				for (const track of stream.getTracks()) track.stop();
+				const blob = new Blob(chunksRef.current, {
+					type: recorder.mimeType || mimeType || "audio/webm",
+				});
+				chunksRef.current = [];
+				setRecording(false);
+				if (blob.size === 0) return;
+
+				setTranscribing(true);
+				try {
+					const formData = new FormData();
+					formData.append(
+						"audio",
+						blob,
+						`recording.${fileExtensionForMimeType(blob.type)}`,
+					);
+					const { text } = await transcribeAudio({ data: formData });
+					if (text) onTranscriptRef.current(text);
+				} catch (err) {
+					setError(
+						err instanceof Error
+							? err.message
+							: "Transkription ist fehlgeschlagen.",
+					);
+				} finally {
+					setTranscribing(false);
+				}
+			};
+
+			mediaRecorderRef.current = recorder;
+			recorder.start();
+			setRecording(true);
+			autoStopTimerRef.current = setTimeout(stop, MAX_RECORDING_SECONDS * 1000);
+		} catch (err) {
+			if (err instanceof DOMException && err.name === "NotAllowedError") {
+				setError("Mikrofonzugriff wurde verweigert.");
+			} else if (err instanceof DOMException && err.name === "NotFoundError") {
+				setError("Kein Mikrofon gefunden.");
+			} else {
+				setError("Zugriff auf das Mikrofon ist fehlgeschlagen.");
+			}
 		}
 	}
 
-	return { supported, insecureContext, listening, error, toggle };
+	function toggle() {
+		if (recording) {
+			stop();
+		} else {
+			start();
+		}
+	}
+
+	useEffect(() => {
+		return () => {
+			if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+			mediaRecorderRef.current?.stop();
+		};
+	}, []);
+
+	return { supported, insecureContext, recording, transcribing, error, toggle };
 }
 
 function QuickCheck() {
@@ -141,7 +176,7 @@ function QuickCheck() {
 	const [state, setState] = useState<QuickCheckState>({ status: "idle" });
 	const quickCheck = useServerFn(quickCheckFn);
 	const verifyClaim = useServerFn(verifyClaimFn);
-	const speech = useSpeechInput((transcript) => setInput(transcript));
+	const audio = useAudioRecording((transcript) => setInput(transcript));
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -173,7 +208,10 @@ function QuickCheck() {
 		}
 	}
 
-	const busy = state.status === "checking" || state.status === "verifying";
+	const busy =
+		state.status === "checking" ||
+		state.status === "verifying" ||
+		audio.transcribing;
 
 	return (
 		<div className="mx-auto max-w-3xl p-8">
@@ -197,30 +235,31 @@ function QuickCheck() {
 						onChange={(event) => setInput(event.target.value)}
 						placeholder="Deutschland hat die Atomkraft abgeschafft."
 					/>
-					{speech.supported && (
+					{audio.supported && (
 						<button
 							type="button"
-							onClick={speech.toggle}
-							aria-pressed={speech.listening}
+							onClick={audio.toggle}
+							disabled={audio.transcribing}
+							aria-pressed={audio.recording}
 							title={
-								speech.listening ? "Aufnahme stoppen" : "Spracheingabe starten"
+								audio.recording ? "Aufnahme stoppen" : "Spracheingabe starten"
 							}
-							className={`h-11 shrink-0 rounded border px-3 text-sm font-medium ${
-								speech.listening
+							className={`h-11 shrink-0 rounded border px-3 text-sm font-medium disabled:opacity-50 ${
+								audio.recording
 									? "animate-pulse border-red-600 bg-red-600 text-white"
 									: "border-gray-300"
 							}`}
 						>
-							{speech.listening ? "⏹" : "🎤"}
+							{audio.recording ? "⏹" : "🎤"}
 						</button>
 					)}
 				</div>
-				{!speech.supported && !speech.insecureContext && (
+				{!audio.supported && !audio.insecureContext && (
 					<p className="mt-1 text-xs text-gray-500">
 						Spracheingabe wird in diesem Browser nicht unterstützt.
 					</p>
 				)}
-				{speech.insecureContext && (
+				{audio.insecureContext && (
 					<p className="mt-1 text-xs text-gray-500">
 						Spracheingabe benötigt eine sichere Verbindung (HTTPS) oder
 						„localhost“. Über eine lokale Netzwerkadresse (z. B. beim Testen auf
@@ -228,14 +267,19 @@ function QuickCheck() {
 						Mikrofonzugriff automatisch.
 					</p>
 				)}
-				{speech.listening && (
+				{audio.recording && (
 					<p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-red-700">
 						<span className="inline-block h-2 w-2 animate-pulse rounded-full bg-red-600" />
 						Aufnahme läuft — klicke auf das Mikrofon, um sie zu beenden.
 					</p>
 				)}
-				{speech.error && (
-					<p className="mt-1 text-xs text-red-700">{speech.error}</p>
+				{audio.transcribing && (
+					<p className="mt-1 text-xs font-medium text-gray-600">
+						Aufnahme wird transkribiert…
+					</p>
+				)}
+				{audio.error && (
+					<p className="mt-1 text-xs text-red-700">{audio.error}</p>
 				)}
 				<button
 					type="submit"

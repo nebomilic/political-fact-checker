@@ -20,7 +20,7 @@ The primary flow (`/`), described in `SCOPE.md`'s Input/Claim extraction/Verific
 
 The second, personal-use entry point (`/quick`), described in `SCOPE.md`'s Quick Check bullet — reuses the same verification pipeline and panels as the transcript flow above, not a parallel one:
 
-1. User types, or speaks via the browser's Web Speech API mic button, a single statement or yes/no-style question.
+1. User types, or speaks via the mic button, a single statement or yes/no-style question. Spoken input is recorded client-side and transcribed server-side via OpenAI's Whisper API (ADR 0007) before entering the same path as typed input.
 2. One LLM call classifies and normalizes the input together (see ADR 0006): a statement or a confirmatory question ("Hat Deutschland die Atomkraft abgeschafft?") becomes a normalized `Claim`; an open-ended informational question with no implicit claim ("Wie funktioniert die Rentenversicherung?") is rejected — the UI asks the user to rephrase rather than attempting to answer it.
 3. If a `Claim` resulted, it's verified immediately (no separate "verify" click, unlike the transcript flow — there's only ever one claim here, so there's nothing to triage first) and the same verdict + framing panels render.
 4. The resulting `Claim` uses the transcript flow's existing `Unbekannt` speaker placeholder (ADR 0005) internally, but Quick Check has no speaker concept, so its UI doesn't display a speaker chip.

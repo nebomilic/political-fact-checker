@@ -11,10 +11,11 @@ Two entry points, both landing on the same verification pipeline and panels:
 
 - **Transkript** (`/`) — paste a full transcript; the tool extracts every
   checkable claim in it, each verified independently.
-- **Schnellcheck** (`/quick`) — type or speak (via the browser's built-in
-  Web Speech API, client-side only) a single statement or yes/no-style
-  question for an immediate check. Open-ended questions with no implicit
-  claim are declined rather than answered from the model's own knowledge.
+- **Schnellcheck** (`/quick`) — type or speak (recorded in the browser,
+  transcribed server-side via OpenAI's Whisper API) a single statement or
+  yes/no-style question for an immediate check. Open-ended questions with
+  no implicit claim are declined rather than answered from the model's own
+  knowledge.
 
 This is a v0/single-user tool, not a production product yet. See
 [`SCOPE.md`](./SCOPE.md) for what's in and out of scope, and
