@@ -1,5 +1,10 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+	createRootRoute,
+	HeadContent,
+	Link,
+	Scripts,
+} from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import appCss from "../styles.css?url";
@@ -28,6 +33,13 @@ export const Route = createRootRoute({
 	shellComponent: RootDocument,
 });
 
+const navLinkClassName =
+	"rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+// `!` (important) guarantees these win over navLinkClassName's own
+// text/background utilities regardless of Tailwind's generated CSS order,
+// since both class lists are present together on the active link.
+const navLinkActiveClassName = "!bg-gray-900 !text-white";
+
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="de">
@@ -35,6 +47,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
+				<nav className="mx-auto flex max-w-3xl gap-1 px-8 pt-6">
+					<Link
+						to="/"
+						className={navLinkClassName}
+						activeProps={{ className: navLinkActiveClassName }}
+						activeOptions={{ exact: true }}
+					>
+						Transkript
+					</Link>
+					<Link
+						to="/quick"
+						className={navLinkClassName}
+						activeProps={{ className: navLinkActiveClassName }}
+					>
+						Schnellcheck
+					</Link>
+				</nav>
 				{children}
 				<TanStackDevtools
 					config={{

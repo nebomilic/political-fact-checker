@@ -14,12 +14,13 @@ Political conversations mix true claims, false claims, and true-but-misleading f
 - **Disputed handling**: for contested claims, show which credible sources land on which side, not just a single verdict
 - **Framing flag**: a separate, distinct axis — No issue / Missing context / Misleading framing — with a one-line explanation. Never merged visually with the truth verdict
 - **Output**: a list of extracted claim cards shown below the input form — each card shows the exact quote, a verify action, and the verdict + framing panels once run (kept structurally separate, per the framing-flag rule above). Supersedes the original "annotated transcript with inline highlight + hover" idea, which turned out not to be necessary for v0's actual goal — validating extraction and verification quality
+- **Quick Check (personal use, second entry point)**: type or speak a single statement, or a yes/no-style question, verified through the same claim-verification pipeline as the conversation flow above — not a separate pipeline. Voice input is transcribed client-side via the browser's Web Speech API (no server-side STT, no audio upload/storage, no new provider dependency) and fed into the same text path as typed input. Questions are only supported when they imply a checkable claim ("Did Germany abolish nuclear power?" → verify "Germany abolished nuclear power"); open-ended informational questions with no implicit claim are out of scope — the tool prompts for rephrasing rather than attempting to answer them directly. Needs its own page/UI (different input shape and flow than the conversation transcript view); reuses verification and the extraction/grounding logic in `src/server/extraction/shared.ts` almost entirely as-is
 - **Language/market**: German-language political statements
 - **Users**: single-user, local use — no accounts, no multi-user features
 
 ## Explicitly out of scope for v0
 
-- Live or streaming input — no audio, no real-time transcription, no speaker diarization
+- Live or streaming input — continuous real-time transcription of an ongoing conversation, no speaker diarization. (This excludes *continuous/live* audio specifically — a single recorded-then-transcribed statement or question is in scope via Quick Check above, which is a fundamentally different thing: one bounded utterance, not an ongoing stream.)
 - Speaker-interest / affiliation tagging (needs its own design pass — revisit after v0 works)
 - Accounts, auth, saved history across sessions
 - Public-facing publishing, sharing, or embedding features

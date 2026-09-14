@@ -12,11 +12,15 @@
 // behavior is unchanged.
 
 import { mistralExtractionProvider } from "#/server/extraction/mistral";
-import { openaiExtractionProvider } from "#/server/extraction/openai";
+import {
+	classifyQuickCheckInput,
+	openaiExtractionProvider,
+} from "#/server/extraction/openai";
 import type {
 	ExtractClaimsResult,
 	ExtractionProviderId,
 } from "#/server/extraction/shared";
+import type { Claim } from "#/types/fact-check";
 
 export type { ExtractClaimsResult };
 
@@ -31,4 +35,12 @@ export async function extractClaims(
 ): Promise<ExtractClaimsResult> {
 	const provider = providers[options?.provider ?? "openai"];
 	return provider.extract(transcript);
+}
+
+/**
+ * Quick Check's server entry point. Deliberately OpenAI-only, with no
+ * `options.provider` — see classifyQuickCheckInput's own comment.
+ */
+export async function quickCheck(input: string): Promise<Claim | null> {
+	return classifyQuickCheckInput(input);
 }

@@ -15,7 +15,12 @@
 // speaker instead of ever producing an unverifiable claim.
 
 import { describe, expect, it } from "vitest";
-import { buildClaims, type ExtractedClaim } from "#/server/extraction/shared";
+import {
+	buildClaims,
+	buildQuickCheckClaim,
+	type ExtractedClaim,
+	type QuickCheckResult,
+} from "#/server/extraction/shared";
 
 function rawClaim(overrides: Partial<ExtractedClaim> = {}): ExtractedClaim {
 	return {
@@ -116,5 +121,76 @@ describe("buildClaims", () => {
 
 		expect(result.claims).toHaveLength(1);
 		expect(result.droppedCount).toBe(2);
+	});
+});
+
+function quickCheckResult(
+	overrides: Partial<QuickCheckResult> = {},
+): QuickCheckResult {
+	return {
+		type: "claim",
+		quote: "Deutschland hat 2023 alle Atomkraftwerke abgeschaltet.",
+		extractedClaim: "Deutschland hat 2023 alle Atomkraftwerke abgeschaltet.",
+		...overrides,
+	};
+}
+
+describe("buildQuickCheckClaim", () => {
+	it("builds a claim from a statement, with the Unbekannt speaker fallback", () => {
+		const input = "Deutschland hat 2023 alle Atomkraftwerke abgeschaltet.";
+		const claim = buildQuickCheckClaim(quickCheckResult(), input);
+
+		expect(claim).not.toBeNull();
+		expect(claim).toMatchObject({
+			speaker: "Unbekannt",
+			quote: input,
+			extractedClaim: input,
+		});
+	});
+
+	it("builds a claim from a confirmatory question normalized into its presupposed assertion", () => {
+		const input = "Hat Deutschland die Atomkraft abgeschafft?";
+		const claim = buildQuickCheckClaim(
+			quickCheckResult({
+				quote: input,
+				extractedClaim: "Deutschland hat die Atomkraft abgeschafft.",
+			}),
+			input,
+		);
+
+		expect(claim).not.toBeNull();
+		expect(claim?.extractedClaim).toBe(
+			"Deutschland hat die Atomkraft abgeschafft.",
+		);
+	});
+
+	it("returns null for an open-ended question with no implicit claim", () => {
+		const input = "Wie funktioniert die Rentenversicherung?";
+		const claim = buildQuickCheckClaim(
+			quickCheckResult({ type: "no_claim", quote: "", extractedClaim: "" }),
+			input,
+		);
+
+		expect(claim).toBeNull();
+	});
+
+	it("returns null when the quote was paraphrased rather than copied verbatim", () => {
+		const input = "Deutschland hat 2023 alle Atomkraftwerke abgeschaltet.";
+		const claim = buildQuickCheckClaim(
+			quickCheckResult({ quote: "Deutschland schaltete 2023 die AKWs ab." }),
+			input,
+		);
+
+		expect(claim).toBeNull();
+	});
+
+	it("returns null for a blank extractedClaim", () => {
+		const input = "Deutschland hat 2023 alle Atomkraftwerke abgeschaltet.";
+		const claim = buildQuickCheckClaim(
+			quickCheckResult({ extractedClaim: "   " }),
+			input,
+		);
+
+		expect(claim).toBeNull();
 	});
 });

@@ -55,7 +55,7 @@ export interface ExtractClaimsResult {
 	droppedCount: number;
 }
 
-const UNKNOWN_SPEAKER = "Unbekannt";
+export const UNKNOWN_SPEAKER = "Unbekannt";
 
 /**
  * Enforces the grounding contract shared by every provider: a claim's quote
@@ -106,4 +106,81 @@ export type ExtractionProviderId = "openai" | "mistral";
 export interface ExtractionProvider {
 	id: ExtractionProviderId;
 	extract(transcript: string): Promise<ExtractClaimsResult>;
+}
+
+// Quick Check: classify + normalize a single typed/spoken utterance in one
+// LLM call, rather than running the multi-speaker transcript parser above
+// on a one-line input. See PRD.md's Quick Check flow and SCOPE.md.
+
+export const quickCheckResultSchema = z.object({
+	type: z
+		.enum(["claim", "no_claim"])
+		.describe(
+			'"claim" if the input is a statement, or a yes/no-style question that presupposes a checkable claim. "no_claim" if it is an open-ended informational question, an opinion, a value judgement, or a prediction with no implicit checkable claim.',
+		),
+	quote: z
+		.string()
+		.describe(
+			'The exact, verbatim input text that contains the claim, copied character-for-character. Empty string if type is "no_claim".',
+		),
+	extractedClaim: z
+		.string()
+		.describe(
+			'A normalized, self-contained, checkable statement derived from the input, in German. For a yes/no-style question, this is the assertion the question presupposes (e.g. "Hat Deutschland die Atomkraft abgeschafft?" -> "Deutschland hat die Atomkraft abgeschafft."). Empty string if type is "no_claim".',
+		),
+});
+
+export type QuickCheckResult = z.infer<typeof quickCheckResultSchema>;
+
+export const QUICK_CHECK_SYSTEM_PROMPT = `Du analysierst eine einzelne, kurze Eingabe (getippt oder per Spracheingabe diktiert) einer Person, die eine politische Aussage überprüfen möchte.
+
+Klassifiziere die Eingabe zunächst:
+- "claim": die Eingabe ist eine Aussage, oder eine Ja/Nein-Frage bzw. eine bestätigende Frage, die eine überprüfbare Behauptung voraussetzt (z.B. "Hat Deutschland die Atomkraft abgeschafft?" setzt die Behauptung "Deutschland hat die Atomkraft abgeschafft." voraus).
+- "no_claim": die Eingabe ist eine offene Wissensfrage ohne implizite Behauptung (z.B. "Wie funktioniert die Rentenversicherung?"), eine reine Meinung, ein Werturteil oder eine Vorhersage. Versuche NICHT, eine solche Frage zu beantworten.
+
+Wenn "claim":
+- "quote" ist die Eingabe wortwörtlich, exakt wie gegeben.
+- "extractedClaim" ist eine normalisierte, eigenständig verständliche Aussage, auf Deutsch, mit Pronomen aufgelöst — ausschließlich anhand von Informationen aus der Eingabe selbst. Bei einer Frage: formuliere die Behauptung, die die Frage voraussetzt, als Aussagesatz.
+
+Wenn "no_claim": lasse "quote" und "extractedClaim" leer.
+
+Bewerte NICHT, ob eine Behauptung wahr oder falsch ist. Verwende KEIN Wissen außerhalb der gegebenen Eingabe.`;
+
+/**
+ * Single-input analogue of buildClaims: classifies and normalizes one typed
+ * or spoken utterance instead of parsing a multi-speaker transcript. Reuses
+ * the same grounding contract (quote must appear verbatim in the source)
+ * and the same "Unbekannt" speaker fallback from ADR 0005 — Quick Check has
+ * no speaker concept, so every claim it produces uses the placeholder
+ * directly rather than inventing new speaker-handling.
+ *
+ * Returns null both when the model classifies the input as having no
+ * implicit claim, and when a "claim" result fails grounding (ungrounded
+ * quote, blank extractedClaim) — in both cases the UI asks the user to
+ * rephrase as a clear statement, so the caller doesn't need to distinguish
+ * the two.
+ */
+export function buildQuickCheckClaim(
+	result: QuickCheckResult,
+	input: string,
+): Claim | null {
+	if (result.type === "no_claim") return null;
+
+	const normalizedInput = normalizeWhitespace(input);
+	const normalizedQuote = normalizeWhitespace(result.quote);
+	const extractedClaim = result.extractedClaim.trim();
+	if (
+		!normalizedQuote ||
+		!normalizedInput.includes(normalizedQuote) ||
+		!extractedClaim
+	) {
+		return null;
+	}
+
+	return {
+		id: crypto.randomUUID(),
+		speaker: UNKNOWN_SPEAKER,
+		quote: result.quote,
+		extractedClaim,
+	};
 }
