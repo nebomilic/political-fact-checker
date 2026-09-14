@@ -64,3 +64,11 @@ extraction through machinery it doesn't need.
   an 11-case (verification) / 10-case (extraction) fixture set. If revisited,
   extraction is the more promising candidate to actually switch; verification
   would need either a different approach or real improvement first.
+- Quick Check's classify-and-normalize call (`classifyQuickCheckInput`,
+  added after this ADR — see ADR 0006) is a third LLM call site, and was
+  deliberately left OpenAI-only rather than given the same `--provider`
+  treatment: it has no eval harness of its own to compare against. If
+  extraction's Mistral results above are ever acted on, Quick Check's
+  classify call — which shares extraction's grounding logic and prompt
+  style — would need its own follow-up to stay consistent, since nothing
+  currently tests it against Mistral.

@@ -6,13 +6,24 @@ Boundaries (what's in/out, success criteria, open questions) live in `SCOPE.md` 
 
 Political conversations mix true claims, false claims, and true-but-misleadingly-framed claims. Existing German fact-checkers (Correctiv, ARD-faktenfinder, dpa) are thorough but manual and slow. v0 tests whether an LLM pipeline can do claim-level fact-checking — plus a separate check for misleading framing — accurately enough to be useful, for German-language political text.
 
-## User flow
+## Transcript flow
+
+The primary flow (`/`), described in `SCOPE.md`'s Input/Claim extraction/Verification bullets:
 
 1. User pastes a transcript into a text box. Speakers are labeled manually within the pasted text (e.g. `[Name]: ...`) — no diarization.
 2. System extracts discrete, checkable factual claims, each tagged to a speaker and an exact quote from the source text.
 3. Each claim is verified against retrieved evidence (never from model memory) and assigned a categorical verdict with cited sources.
 4. Each claim separately gets a framing assessment — kept structurally distinct from the verdict, never merged into one score.
 5. Output: a list of extracted claim cards shown below the input form. Each card shows the exact quote, a verify action, and the verdict + framing panels once run (kept structurally separate, per the framing rule above).
+
+## Quick Check flow
+
+The second, personal-use entry point (`/quick`), described in `SCOPE.md`'s Quick Check bullet — reuses the same verification pipeline and panels as the transcript flow above, not a parallel one:
+
+1. User types, or speaks via the browser's Web Speech API mic button, a single statement or yes/no-style question.
+2. One LLM call classifies and normalizes the input together (see ADR 0006): a statement or a confirmatory question ("Hat Deutschland die Atomkraft abgeschafft?") becomes a normalized `Claim`; an open-ended informational question with no implicit claim ("Wie funktioniert die Rentenversicherung?") is rejected — the UI asks the user to rephrase rather than attempting to answer it.
+3. If a `Claim` resulted, it's verified immediately (no separate "verify" click, unlike the transcript flow — there's only ever one claim here, so there's nothing to triage first) and the same verdict + framing panels render.
+4. The resulting `Claim` uses the transcript flow's existing `Unbekannt` speaker placeholder (ADR 0005) internally, but Quick Check has no speaker concept, so its UI doesn't display a speaker chip.
 
 ## Data model
 

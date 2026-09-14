@@ -7,6 +7,15 @@ Unverifiable / Disputed), and separately flags misleading framing (No
 issue / Missing context / Misleading framing) — kept structurally distinct
 from the verdict, never merged into one score.
 
+Two entry points, both landing on the same verification pipeline and panels:
+
+- **Transkript** (`/`) — paste a full transcript; the tool extracts every
+  checkable claim in it, each verified independently.
+- **Schnellcheck** (`/quick`) — type or speak (via the browser's built-in
+  Web Speech API, client-side only) a single statement or yes/no-style
+  question for an immediate check. Open-ended questions with no implicit
+  claim are declined rather than answered from the model's own knowledge.
+
 This is a v0/single-user tool, not a production product yet. See
 [`SCOPE.md`](./SCOPE.md) for what's in and out of scope, and
 [`METHODOLOGY.md`](./METHODOLOGY.md) for how the project's docs fit

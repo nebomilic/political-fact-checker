@@ -21,15 +21,21 @@ verdict and framing as separate, never-merged fields (see ADR 0001).
 
 ## Decision
 
-Translate only at the presentation layer. `src/routes/index.tsx` defines two
-`Record<VerdictCategory, string>` / `Record<FramingFlag, string>` maps
-(`VERDICT_LABELS`, `FRAMING_LABELS`) that translate purely for display —
+Translate only at the presentation layer. `src/components/fact-check-panels.tsx`
+defines two `Record<VerdictCategory, string>` / `Record<FramingFlag, string>`
+maps (`VERDICT_LABELS`, `FRAMING_LABELS`) that translate purely for display —
 e.g. `True` → "Wahr", `Missing context` → "Fehlender Kontext". The
 underlying type, schema, prompts, and eval fixtures stay English and
 unchanged. Panel headers ("Bewertung"/"Darstellung") were chosen to match
 the vocabulary German fact-check outlets (Correctiv, ARD-faktenfinder —
 both named in `SCOPE.md`) actually use, rather than a literal
 word-for-word translation of "Verdict"/"Framing".
+
+(Originally these maps lived in `src/routes/index.tsx`; when Quick Check
+added a second route needing the same panels, `VerdictPanel`/`FramingPanel`
+and both maps were extracted into `src/components/fact-check-panels.tsx` so
+both routes share one translation layer rather than risking two maps
+drifting apart — see ADR 0006.)
 
 ## Consequences
 

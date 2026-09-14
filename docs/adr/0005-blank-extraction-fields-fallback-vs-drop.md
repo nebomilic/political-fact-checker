@@ -48,3 +48,8 @@ per field, based on whether a safe placeholder exists:
   that both the OpenAI and Mistral extraction providers route through —
   fine while the UI is German-only (ADR 0004), but worth revisiting
   together with that decision if a second UI language is ever added.
+- The same placeholder is now also `buildQuickCheckClaim`'s speaker for
+  every Quick Check claim, not just `buildClaims`' fallback for an
+  unlabeled transcript speaker (see ADR 0006) — Quick Check has no speaker
+  concept at all, so this fallback became the only speaker value that path
+  ever produces, reused as-is rather than given its own handling.
