@@ -20,7 +20,7 @@ Implemented in `src/types/fact-check.ts` — that file is the source of truth fo
 
 **Claim**
 - `id`
-- `speaker` — free-text label as given in the pasted transcript
+- `speaker` — free-text label as given in the pasted transcript. Falls back to a placeholder ("Unbekannt") when the transcript doesn't label the speaker, rather than dropping the claim — see ADR 0005
 - `quote` — the minimal contiguous span of the source text, extended to full sentence boundaries, that contains the checkable claim. May span multiple sentences when the claim genuinely requires it (e.g. a stat qualified by a caveat in the next sentence). Quotes for different claims may overlap rather than force-splitting a shared sentence
 - `extracted_claim` — normalized, checkable statement derived from the quote
 
@@ -53,5 +53,5 @@ Implemented in `src/types/fact-check.ts` — that file is the source of truth fo
 
 ## Open questions specific to this PRD
 
-- Exact claim-extraction prompt and how strictly to filter opinion vs. checkable fact (tracked via eval cases in `src/test/fixtures/claim-extraction-cases.ts`)
+- Exact claim-extraction prompt and how strictly to filter opinion vs. checkable fact (tracked via eval cases in `src/tests/fixtures/claim-extraction-cases.ts`)
 - Whether `confidence` thresholds for surfacing a verdict need tuning per category (e.g. higher bar for `False` than for `Unverifiable`)

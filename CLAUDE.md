@@ -37,6 +37,8 @@ AI fact-checker for German political conversations — extracts factual claims f
 - No auth/session/account code in v0 (see `SCOPE.md`)
 - Extraction/verdict tests are evals, not unit tests — they call the real LLM and are non-deterministic. Assert on claim count and loose topic coverage (substring/keyword match), never exact string equality on generated text. Kept behind a separate command (`npm run eval:*`, `vitest.config.ts`) from fast unit tests (`npm run test`, `vitest.unit.config.ts`), since they cost tokens and shouldn't run on every save
 - Pure, deterministic logic (parsing, validation, grounding filters — no LLM call) gets a fast unit test in `src/tests/unit/`, not an eval fixture, even when the bug that motivated it was first found via extraction/verification. If it doesn't need a model to exercise, it doesn't belong behind `eval:*`
+- Real-world cases (real transcripts, real professional fact-checks) are logged by hand in `MANUAL_TESTS.md`, separate from both test suites above. When one surfaces a real bug or edge case, promote it into an eval fixture or unit test per that file's promotion rule, rather than leaving it a one-off manual check
+- UI copy is German-only (end users are German-language, single-user local tool — see `SCOPE.md`); the underlying `VerdictCategory`/`FramingFlag` types, LLM schema/prompts, and eval fixtures stay English, translated only at the presentation layer (`VERDICT_LABELS`/`FRAMING_LABELS` maps in `src/routes/index.tsx`). See ADR 0004
 
 ## Workflow
 

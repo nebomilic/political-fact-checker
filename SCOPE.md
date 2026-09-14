@@ -35,6 +35,6 @@ Political conversations mix true claims, false claims, and true-but-misleading f
 
 ## Open questions (not blocking v0 — revisit later)
 
-- German-language evidence sourcing: prioritize existing fact-check archives (Correctiv/ARD/dpa) over general web search, or combine both?
+- German-language evidence sourcing: prioritize existing fact-check archives (Correctiv/ARD/dpa) over general web search, or combine both? Deliberately deferred, not resolved — see ADR 0002 (blocked on an unchecked legal/ToS question, not a design call)
 - What legal review is needed before verdicts naming real politicians go anywhere public-facing
 - Video/footage usage terms (Bundestag Mediathek conditions) — only relevant once video is in scope
