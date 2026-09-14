@@ -21,6 +21,19 @@ This is a v0/single-user tool, not a production product yet. See
 [`METHODOLOGY.md`](./METHODOLOGY.md) for how the project's docs fit
 together and how decisions get made.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="screenshots/Transkript.png" alt="Transkript view: paste a transcript, then extract and verify claims"></td>
+    <td><img src="screenshots/Schnellcheck.png" alt="Schnellcheck view: a single statement or question, with mic input"></td>
+  </tr>
+  <tr>
+    <td align="center">Transkript (<code>/</code>)</td>
+    <td align="center">Schnellcheck (<code>/quick</code>)</td>
+  </tr>
+</table>
+
 ## Docs map
 
 - [`SCOPE.md`](./SCOPE.md) — what v0 is and isn't, success criteria, open questions
