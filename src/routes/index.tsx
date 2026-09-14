@@ -83,7 +83,7 @@ function Home() {
 
 	return (
 		<div className="mx-auto max-w-3xl p-8">
-			<h1 className="text-3xl font-bold">Faktencheck 🔍</h1>
+			<h1 className="text-3xl font-bold">Transkript 🔍</h1>
 			<p className="mt-2 text-sm text-gray-600">
 				Füge unten das Transkript einer politischen Rede oder Debatte ein. Das
 				Tool erkennt automatisch überprüfbare Behauptungen im Text. Für jede
