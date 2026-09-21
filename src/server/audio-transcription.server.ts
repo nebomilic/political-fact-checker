@@ -2,7 +2,7 @@
 //
 // Server-only audio transcription for Quick Check's voice input. Replaces
 // the browser's Web Speech API (see ADR 0007 for why) — audio is recorded
-// client-side (src/routes/quick.tsx) and transcribed here via OpenAI's
+// client-side (src/routes/index.tsx) and transcribed here via OpenAI's
 // Whisper API. Deliberately OpenAI-only, no ExtractionProvider-style
 // dual-provider treatment (same reasoning as Quick Check's classify call,
 // see ADR 0006) — not persisted anywhere, forwarded directly to OpenAI.

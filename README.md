@@ -9,13 +9,13 @@ from the verdict, never merged into one score.
 
 Two entry points, both landing on the same verification pipeline and panels:
 
-- **Transkript** (`/`) — paste a full transcript; the tool extracts every
-  checkable claim in it, each verified independently.
-- **Schnellcheck** (`/quick`) — type or speak (recorded in the browser,
+- **Schnellcheck** (`/`) — type or speak (recorded in the browser,
   transcribed server-side via OpenAI's Whisper API) a single statement or
   yes/no-style question for an immediate check. Open-ended questions with
   no implicit claim are declined rather than answered from the model's own
   knowledge.
+- **Transkript** (`/transcript`) — paste a full transcript; the tool
+  extracts every checkable claim in it, each verified independently.
 
 This is a v0/single-user tool, not a production product yet. See
 [`SCOPE.md`](./SCOPE.md) for what's in and out of scope, and
@@ -26,12 +26,12 @@ together and how decisions get made.
 
 <table>
   <tr>
-    <td><img src="screenshots/Transkript.png" alt="Transkript view: paste a transcript, then extract and verify claims"></td>
     <td><img src="screenshots/Schnellcheck.png" alt="Schnellcheck view: a single statement or question, with mic input"></td>
+    <td><img src="screenshots/Transkript.png" alt="Transkript view: paste a transcript, then extract and verify claims"></td>
   </tr>
   <tr>
-    <td align="center">Transkript (<code>/</code>)</td>
-    <td align="center">Schnellcheck (<code>/quick</code>)</td>
+    <td align="center">Schnellcheck (<code>/</code>)</td>
+    <td align="center">Transkript (<code>/transcript</code>)</td>
   </tr>
 </table>
 

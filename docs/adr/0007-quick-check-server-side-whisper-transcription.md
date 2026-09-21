@@ -32,7 +32,7 @@ and verification.
 ## Decision
 
 Record audio client-side with the standard, broadly-supported
-`MediaRecorder`/`getUserMedia` APIs (`src/routes/quick.tsx`'s
+`MediaRecorder`/`getUserMedia` APIs (`src/routes/index.tsx`'s
 `useAudioRecording` hook), capped at 60 seconds per recording (auto-stops
 and transcribes). On stop, the recorded clip is uploaded as `FormData` to
 a new server function, `transcribeAudioFn`

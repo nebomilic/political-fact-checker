@@ -40,7 +40,7 @@ The call itself (`classifyQuickCheckInput` in
 specifically to serve the `--provider`/`--compare` eval knob (ADR 0003),
 and Quick Check has no such flag or eval harness.
 
-Once a `Claim` exists, `src/routes/quick.tsx` calls `verifyClaimFn`
+Once a `Claim` exists, `src/routes/index.tsx` calls `verifyClaimFn`
 immediately — no separate "verify" click, unlike the transcript flow's
 explicit per-claim button. The transcript flow's two-step design exists
 because a transcript can yield many claims worth triaging before spending a
@@ -73,7 +73,8 @@ still populated on the `Claim`, just not shown).
   acceptable for a single-user personal-use feature (SCOPE.md), would need
   reconsidering if Quick Check ever got real traffic.
 - `VerdictPanel`/`FramingPanel` (and the German label maps, ADR 0004) were
-  extracted from `src/routes/index.tsx` into
+  extracted from the transcript flow's route file (now `src/routes/transcript.tsx`;
+  it was `src/routes/index.tsx` at the time, before ADR 0008's route swap) into
   `src/components/fact-check-panels.tsx` so both routes render verdicts and
   framing identically from one shared implementation, rather than risking
   two copies drifting apart.

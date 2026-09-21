@@ -10,43 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as QuickRouteImport } from './routes/quick'
+import { Route as TranscriptRouteImport } from './routes/transcript'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuickRoute = QuickRouteImport.update({
-  id: '/quick',
-  path: '/quick',
+const TranscriptRoute = TranscriptRouteImport.update({
+  id: '/transcript',
+  path: '/transcript',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/quick': typeof QuickRoute
+  '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/quick': typeof QuickRoute
+  '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/quick': typeof QuickRoute
+  '/transcript': typeof TranscriptRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/quick'
+  fullPaths: '/' | '/transcript'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/quick'
-  id: '__root__' | '/' | '/quick'
+  to: '/' | '/transcript'
+  id: '__root__' | '/' | '/transcript'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  QuickRoute: typeof QuickRoute
+  TranscriptRoute: typeof TranscriptRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,11 +58,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quick': {
-      id: '/quick'
-      path: '/quick'
-      fullPath: '/quick'
-      preLoaderRoute: typeof QuickRouteImport
+    '/transcript': {
+      id: '/transcript'
+      path: '/transcript'
+      fullPath: '/transcript'
+      preLoaderRoute: typeof TranscriptRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -70,7 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  QuickRoute: QuickRoute,
+  TranscriptRoute: TranscriptRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

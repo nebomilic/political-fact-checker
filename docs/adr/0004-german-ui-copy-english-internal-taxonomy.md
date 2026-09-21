@@ -31,8 +31,10 @@ the vocabulary German fact-check outlets (Correctiv, ARD-faktenfinder —
 both named in `SCOPE.md`) actually use, rather than a literal
 word-for-word translation of "Verdict"/"Framing".
 
-(Originally these maps lived in `src/routes/index.tsx`; when Quick Check
-added a second route needing the same panels, `VerdictPanel`/`FramingPanel`
+(Originally these maps lived in the transcript flow's route file (now
+`src/routes/transcript.tsx`; it was `src/routes/index.tsx` before ADR 0008's
+route swap); when Quick Check added a second route needing the same panels,
+`VerdictPanel`/`FramingPanel`
 and both maps were extracted into `src/components/fact-check-panels.tsx` so
 both routes share one translation layer rather than risking two maps
 drifting apart — see ADR 0006.)

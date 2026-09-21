@@ -1,7 +1,7 @@
 // src/components/fact-check-panels.tsx
 //
-// Verdict + framing panels shared by the transcript flow (routes/index.tsx)
-// and Quick Check (routes/quick.tsx) — kept structurally separate per
+// Verdict + framing panels shared by the transcript flow (routes/transcript.tsx)
+// and Quick Check (routes/index.tsx) — kept structurally separate per
 // CLAUDE.md's framing convention. Single translation layer for the German
 // labels (ADR 0004): one VERDICT_LABELS/FRAMING_LABELS map, not one per route.
 

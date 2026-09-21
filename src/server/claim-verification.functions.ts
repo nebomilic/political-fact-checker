@@ -17,7 +17,7 @@ const REQUIRED_CLAIM_FIELDS = [
 /**
  * Names the first required field that's missing or blank, rather than just
  * pass/fail — the error this feeds into is shown verbatim in the UI (see
- * routes/index.tsx's handleVerify), so a specific field name is far more
+ * routes/transcript.tsx's handleVerify), so a specific field name is far more
  * actionable than a generic rejection. Returns null when `value` is a valid
  * Claim.
  */

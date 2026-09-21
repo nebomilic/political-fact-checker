@@ -54,14 +54,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 						activeProps={{ className: navLinkActiveClassName }}
 						activeOptions={{ exact: true }}
 					>
-						Transkript
+						Schnellcheck
 					</Link>
 					<Link
-						to="/quick"
+						to="/transcript"
 						className={navLinkClassName}
 						activeProps={{ className: navLinkActiveClassName }}
 					>
-						Schnellcheck
+						Transkript
 					</Link>
 				</nav>
 				{children}

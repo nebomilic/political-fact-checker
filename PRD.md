@@ -8,7 +8,7 @@ Political conversations mix true claims, false claims, and true-but-misleadingly
 
 ## Transcript flow
 
-The primary flow (`/`), described in `SCOPE.md`'s Input/Claim extraction/Verification bullets:
+The primary flow (`/transcript`), described in `SCOPE.md`'s Input/Claim extraction/Verification bullets:
 
 1. User pastes a transcript into a text box. Speakers are labeled manually within the pasted text (e.g. `[Name]: ...`) — no diarization.
 2. System extracts discrete, checkable factual claims, each tagged to a speaker and an exact quote from the source text.
@@ -18,7 +18,7 @@ The primary flow (`/`), described in `SCOPE.md`'s Input/Claim extraction/Verific
 
 ## Quick Check flow
 
-The second, personal-use entry point (`/quick`), described in `SCOPE.md`'s Quick Check bullet — reuses the same verification pipeline and panels as the transcript flow above, not a parallel one:
+The second, personal-use entry point (`/`), described in `SCOPE.md`'s Quick Check bullet — reuses the same verification pipeline and panels as the transcript flow above, not a parallel one:
 
 1. User types, or speaks via the mic button, a single statement or yes/no-style question. Spoken input is recorded client-side and transcribed server-side via OpenAI's Whisper API (ADR 0007) before entering the same path as typed input.
 2. One LLM call classifies and normalizes the input together (see ADR 0006): a statement or a confirmatory question ("Hat Deutschland die Atomkraft abgeschafft?") becomes a normalized `Claim`; an open-ended informational question with no implicit claim ("Wie funktioniert die Rentenversicherung?") is rejected — the UI asks the user to rephrase rather than attempting to answer it.
